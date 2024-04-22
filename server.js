@@ -4,7 +4,8 @@ const port = 3000;
 const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes'); 
-
+const session = require('express-session');
+const passport = require('./auth'); 
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
@@ -22,6 +23,17 @@ app.use(cors(corsOptions));
 
 // Parsear el cuerpo de las solicitudes como JSON
 app.use(express.json());
+
+app.use(session({
+  secret: 'secret', // Utiliza una cadena secreta larga y aleatoria aquí
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: 'auto' }
+}));
+
+
+app.use(passport.initialize());
+app.use(passport.session()); 
 
 // Inicializar Socket.IO
 const io = new Server(server, {
@@ -47,7 +59,7 @@ mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnified
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
-  console.log("We're connected to the database!");
+  console.log("we are connected to the database!");
 });
 
 // Usar las rutas definidas en el archivo de rutas
