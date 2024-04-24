@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 
 router.get('/', (req, res) => {
-  res.json({ message: 'hello world!'});
+  res.json({ message: 'hello world!' });
 });
 
 router.get('/data', (req, res) => {
@@ -42,14 +42,14 @@ function authenticateToken(req, res, next) {
 
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('/auth/google/callback', 
+router.get('/auth/google/callback',
 
-passport.authenticate('google', { failureRedirect: '/login' }),
-(req, res) => { 
-  const token = generateToken(req.user);
-  // Ejemplo de redirección con el token como query param
-  res.redirect(`http://localhost:3001/?token=${token}`);
-});
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req, res) => {
+    const token = generateToken(req.user);
+    // Ejemplo de redirección con el token como query param
+    res.redirect(`http://localhost:3001/?token=${token}`);
+  });
 
 
 router.post('/v1/create/room', async (req, res) => {
@@ -58,7 +58,7 @@ router.post('/v1/create/room', async (req, res) => {
     const newRoom = new Room({ name, language });
     await newRoom.save();
     req.io.emit('roomCreated', newRoom);  // Utiliza req.io para emitir eventos
-    res.status(201).json({ message: 'Room created successfully'});
+    res.status(201).json({ message: 'Room created successfully' });
   } catch (error) {
     console.error("Error creating the room:", error);
     res.status(500).json({ message: 'Error creating the room', error: error.message });

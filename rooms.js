@@ -6,4 +6,4 @@ const roomSchema = new mongoose.Schema({
 }, { versionKey: false });
 
 const Room = mongoose.model('Room', roomSchema);
-module.exports = Room; // Asegúrate de que esta línea está presente para poder importar Room donde sea necesario
+module.exports = Room;
