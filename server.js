@@ -3,16 +3,16 @@ const app = express();
 const port = 3000;
 const mongoose = require('mongoose');
 const cors = require('cors');
-const routes = require('./routes'); 
+const routes = require('./routes');
 const session = require('express-session');
-const passport = require('./auth'); 
+const passport = require('./auth');
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 
 // Configuración de CORS
 const corsOptions = {
-  origin: 'http://localhost:3001', 
+  origin: 'http://localhost:3001',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
   credentials: true
@@ -25,7 +25,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use(session({
-  secret: 'secret', // Utiliza una cadena secreta larga y aleatoria aquí
+  secret: 'secret',
   resave: false,
   saveUninitialized: true,
   cookie: { secure: 'auto' }
@@ -33,7 +33,7 @@ app.use(session({
 
 
 app.use(passport.initialize());
-app.use(passport.session()); 
+app.use(passport.session());
 
 // Inicializar Socket.IO
 const io = new Server(server, {
@@ -54,11 +54,12 @@ io.on('connection', (socket) => {
   });
 });
 
+
 // Conectar a MongoDB
 mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
+db.once('open', function () {
   console.log("we are connected to the database!");
 });
 
