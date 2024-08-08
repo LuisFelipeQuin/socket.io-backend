@@ -48,9 +48,12 @@ app.use((req, res, next) => {
 
 // Eventos de Socket.IO
 io.on('connection', (socket) => {
-  console.log('a user connected');
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+  });
+
+  socket.on('messageCreated', (newMessage) => {
+    io.to(newMessage.room_id).emit('messageCreated', newMessage);
   });
 });
 
