@@ -11,6 +11,9 @@ const roomSchema = new mongoose.Schema({
   language: String,
   users: [userSchema],
   max_users: Number,
+  lastActivity: { type: Date, default: Date.now },
+  deleted_date: { type: Date, default: null }
 }, { versionKey: false });
+
 
 module.exports = mongoose.model('Room', roomSchema);

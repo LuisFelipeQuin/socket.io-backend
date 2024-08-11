@@ -4,10 +4,14 @@ const Room = require('./rooms');
 const Message = require('./messages');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 
 
 const path = require('path');
+const app = express();
+
+app.use(cookieParser());
 
 router.get('/', (req, res) => {
   res.json({ message: 'hello world!' });
@@ -18,7 +22,7 @@ router.get('/data', (req, res) => {
 });
 
 
-// informacion que se envia en el jsonwebtoken
+// Informacion que se envia en el jsonwebtoken
 function generateToken(user) {
   const payload = {
     _id: user._id,
@@ -30,16 +34,23 @@ function generateToken(user) {
 }
 
 
-
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('/auth/google/callback',
 
+router.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
     const token = generateToken(req.user);
-    res.redirect(`http://localhost:3001/?token=${token}`);
-  });
+
+    res.cookie('token', token, {
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    });
+
+    res.redirect('http://localhost:3001/');
+  }
+);
 
 
 
@@ -75,29 +86,6 @@ router.post('/v1/create/room', async (req, res) => {
 });
 
 
-router.get('/v1/room/single', async (req, res) => {
-  const { room_id } = req.query;
-
-  if (!room_id) {
-    return res.status(200).json({ message: 'room_id is required' });
-  }
-
-  try {
-    const room = await Room.findById(room_id);
-
-    if (!room) {
-      return res.status(200).json({ message: 'Room not found' });
-    }
-
-    res.status(200).json(room);
-  } catch (error) {
-    console.error("Error retrieving the room:", error);
-    res.status(200).json({ message: 'Error retrieving the room', error: error.message });
-  }
-});
-
-
-
 router.post('/v1/join/room', async (req, res, next) => {
   const { room_id, user_id, name, image, debugging } = req.body;
 
@@ -130,6 +118,7 @@ router.post('/v1/join/room', async (req, res, next) => {
     }
 
     room.users.push({ user_id, name, image });
+    room.lastActivity = Date.now();  // Actualizar última actividad
     await room.save();
 
     req.io.emit('userEnteredRoom', room);
@@ -141,6 +130,26 @@ router.post('/v1/join/room', async (req, res, next) => {
   }
 });
 
+router.get('/v1/room/single', async (req, res) => {
+  const { room_id } = req.query;
+
+  if (!room_id) {
+    return res.status(200).json({ message: 'room_id is required' });
+  }
+
+  try {
+    const room = await Room.findById(room_id);
+
+    if (!room) {
+      return res.status(200).json({ message: 'Room not found' });
+    }
+
+    res.status(200).json(room);
+  } catch (error) {
+    console.error("Error retrieving the room:", error);
+    res.status(200).json({ message: 'Error retrieving the room', error: error.message });
+  }
+});
 
 
 
@@ -163,7 +172,7 @@ router.post('/v1/leave/room', async (req, res, next) => {
 
     const userIndex = room.users.findIndex(user => user.user_id === user_id);
     if (userIndex === -1) {
-      return res.status(200).json(debugging ? { success: 1, message: 'User not found in the room' } : { success: 1, response: "NO" });
+      return res.status(200).json({ success: 1, message: 'User not found in the room' });
     }
 
     room.users.splice(userIndex, 1);
@@ -171,12 +180,38 @@ router.post('/v1/leave/room', async (req, res, next) => {
 
     req.io.emit('userLeftRoom', room);
 
-    res.status(200).json({ success: 1, response: "OK", room });
+    res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
     console.error("Error updating the room:", error);
     return next(error);
   }
 });
+
+
+const removeInactiveRooms = async () => {
+  const now = Date.now();
+  try {
+    const rooms = await Room.find();
+    for (const room of rooms) {
+      const timeDifference = now - new Date(room.lastActivity).getTime();
+      console.log(`Checking room ID: ${room._id}, time difference: ${timeDifference} ms`);
+
+      if (room.users.length === 0 && timeDifference > 30000) {
+        room.deleted_date = new Date();
+        await room.save();
+
+        req.io.emit('roomDeleted', { room_id: room._id });
+        console.log(`Marked room with ID: ${room._id} as deleted due to inactivity and emitted event.`);
+      }
+    }
+  } catch (error) {
+    console.error("Error marking inactive rooms as deleted:", error);
+  }
+};
+
+
+setInterval(removeInactiveRooms, 5000);
+
 
 
 // testing
