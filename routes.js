@@ -67,13 +67,33 @@ router.get('/v1/get/rooms', async (req, res) => {
 
 router.post('/v1/create/room', async (req, res) => {
   try {
-    const { name, language, max_users } = req.body;
+    const { name, language, max_users, user_id, user_name, user_image, level } = req.body;
 
-    if (!name || !language || max_users === undefined) {
-      return res.status(200).json({ message: 'Name, Language, and Max Users are required to create a room' });
+    if (!language || max_users === undefined || !user_id || !user_name || !user_image) {
+      return res.status(200).json({ message: 'Name, Language, Max Users, User ID, User Name, and User Image are required to create a room' });
     }
 
-    const newRoom = new Room({ name, language, max_users, users: [] });
+    let validLevel = level || null;
+
+    if (typeof validLevel !== 'string') {
+      return res.status(200).json({ message: 'Invalid value for level. It must be a string.' });
+    }
+
+    const admin = {
+      user_id: user_id,
+      name: user_name,
+      image: user_image
+    };
+
+    const newRoom = new Room({
+      name,
+      language,
+      max_users,
+      users: [],
+      admin: [admin],
+      level: validLevel
+    });
+
     await newRoom.save();
 
     req.io.emit('roomCreated', newRoom);
@@ -84,6 +104,7 @@ router.post('/v1/create/room', async (req, res) => {
     res.status(200).json({ message: 'Error creating the room', error: error.message });
   }
 });
+
 
 
 router.post('/v1/join/room', async (req, res, next) => {
@@ -118,12 +139,12 @@ router.post('/v1/join/room', async (req, res, next) => {
     }
 
     room.users.push({ user_id, name, image });
-    room.lastActivity = Date.now();  // Actualizar última actividad
+    room.lastActivity = Date.now();
     await room.save();
 
     req.io.emit('userEnteredRoom', room);
 
-    res.status(200).json({ success: 1, response: "OK", room });
+    res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
     console.error("Error updating the room:", error);
     return next(error);
@@ -150,7 +171,6 @@ router.get('/v1/room/single', async (req, res) => {
     res.status(200).json({ message: 'Error retrieving the room', error: error.message });
   }
 });
-
 
 
 router.post('/v1/leave/room', async (req, res, next) => {
@@ -188,33 +208,43 @@ router.post('/v1/leave/room', async (req, res, next) => {
 });
 
 
-const removeInactiveRooms = async () => {
-  const now = Date.now();
-  try {
-    const rooms = await Room.find();
-    for (const room of rooms) {
-      const timeDifference = now - new Date(room.lastActivity).getTime();
-      console.log(`Checking room ID: ${room._id}, time difference: ${timeDifference} ms`);
+router.post('/v1/admin/request/leave/room', async (req, res, next) => {
+  const { room_id, admin_id, user_id } = req.body;
 
-      if (room.users.length === 0 && timeDifference > 30000) {
-        room.deleted_date = new Date();
-        await room.save();
-
-        req.io.emit('roomDeleted', { room_id: room._id });
-        console.log(`Marked room with ID: ${room._id} as deleted due to inactivity and emitted event.`);
-      }
-    }
-  } catch (error) {
-    console.error("Error marking inactive rooms as deleted:", error);
+  if (!room_id || !admin_id || !user_id) {
+    return res.status(200).json({ success: 1, message: 'Room ID, Admin ID, and User ID are required' });
   }
-};
 
+  try {
+    // Busca la room por ID
+    const room = await Room.findById(room_id);
+    if (!room) {
+      return res.status(200).json({ success: 1, message: 'Room not found' });
+    }
 
-setInterval(removeInactiveRooms, 5000);
+    const isAdmin = room.admin.some(admin => admin.user_id === admin_id);
+    if (!isAdmin) {
+      return res.status(200).json({ success: 1, message: 'Only the admin can remove a user from the room' });
+    }
 
+    const userIndex = room.users.findIndex(user => user.user_id === user_id);
+    if (userIndex === -1) {
+      return res.status(200).json({ success: 1, message: 'User not found in the room' });
+    }
 
+    room.users.splice(userIndex, 1);
+    room.lastActivity = Date.now();
+    await room.save();
 
-// testing
+    req.io.emit('userRemovedFromRoom', room);
+
+    res.status(200).json({ success: 1, response: 'OK', });
+  } catch (error) {
+    console.error({ success: 1, response: error, });
+    return next(error);
+  }
+});
+
 
 router.get('/v1/get/messages', async (req, res) => {
   try {
@@ -249,9 +279,6 @@ router.get('/v1/get/messages', async (req, res) => {
 });
 
 
-
-
-
 router.post('/v1/create/message', async (req, res) => {
   try {
     const { room_id, user_id, name, content, userImage } = req.body;
@@ -274,6 +301,47 @@ router.post('/v1/create/message', async (req, res) => {
   } catch (error) {
     console.error("Error creating the message:", error);
     res.status(500).json({ message: 'Error creating the message', error: error.message });
+  }
+});
+
+
+router.post('/v1/edit/room', async (req, res) => {
+  try {
+    const { room_id, name, language, max_users, admin_id } = req.body;
+
+
+    if (!room_id || !admin_id) {
+      return res.status(200).json({ message: 'Room ID and Admin ID are required to edit the room' });
+    }
+
+
+    const room = await Room.findById(room_id);
+
+    if (!room) {
+      return res.status(200).json({ message: 'Room not found' });
+    }
+
+
+    const isAdmin = room.admin.some(admin => admin.user_id === admin_id);
+
+    if (!isAdmin) {
+      return res.status(200).json({ message: 'Only the room admin can update the room' });
+    }
+
+    if (name) room.name = name;
+    if (language) room.language = language;
+    if (max_users !== undefined) room.max_users = max_users;
+
+
+    await room.save();
+
+
+    req.io.emit('roomUpdated', room);
+
+    res.status(200).json({ success: 1, response: "OK" });
+  } catch (error) {
+    console.error("Error updating the room:", error);
+    res.status(200).json({ message: 'Error updating the room', error: error.message });
   }
 });
 

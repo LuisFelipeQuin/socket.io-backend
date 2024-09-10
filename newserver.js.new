@@ -1,0 +1,116 @@
+const express = require('express');
+const app = express();
+const port = 3000;
+const mongoose = require('mongoose');
+const cors = require('cors');
+const routes = require('./routes');
+const session = require('express-session');
+const passport = require('./auth');
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+
+// Configuración de CORS
+const corsOptions = {
+  origin: 'http://localhost:3001',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: 'Content-Type,Authorization',
+  credentials: true
+};
+
+// Aplicar middleware de CORS
+app.use(cors(corsOptions));
+
+// Parsear el cuerpo de las solicitudes como JSON
+app.use(express.json());
+
+app.use(session({
+  secret: 'secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: 'auto' }
+}));
+
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Inicializar Socket.IO
+const io = new Server(server, {
+  cors: corsOptions
+});
+
+// Middleware para adjuntar io a cada solicitud
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Eventos de Socket.IO
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  let lastPing = Date.now();
+
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    socket.roomId = roomId; // Guardamos la room_id para después
+    console.log(`User ${socket.id} joined room ${roomId}`);
+  });
+
+  socket.on('messageCreated', (newMessage) => {
+    io.to(newMessage.room_id).emit('messageCreated', newMessage);
+  });
+
+  socket.on('ping', () => {
+    lastPing = Date.now();  // Actualiza el tiempo cuando se recibe un ping
+    socket.emit('pong');  // Responde con un pong
+    console.log(`Received ping from ${socket.id}`);
+  });
+
+  // Chequeo periódico para ver si el usuario sigue activo
+  const checkUserInterval = setInterval(() => {
+    const now = Date.now();
+    if (now - lastPing > 60000) {  // Si no ha enviado ping en 60 segundos
+      console.log(`User ${socket.id} is inactive and will be disconnected.`);
+
+      // Emitir evento a los usuarios de la room indicando que alguien ha salido
+      io.to(socket.roomId).emit('userLeftRoom', { userId: socket.id });
+
+      socket.disconnect();  // Desconectar al usuario manualmente
+      clearInterval(checkUserInterval); // Limpia el intervalo
+    }
+  }, 30000); // Verificamos cada 30 segundos
+
+  // Limpiar el intervalo cuando el usuario se desconecte manualmente
+  socket.on('disconnect', () => {
+    console.log(`User ${socket.id} disconnected`);
+    clearInterval(checkUserInterval);
+  });
+});
+
+
+
+
+// Conectar a MongoDB
+mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+  console.log("we are connected to the database!");
+});
+
+// Usar las rutas definidas en el archivo de rutas
+app.use('/', routes);
+app.use('/api', routes);
+
+// Iniciar el servidor HTTP y Socket.IO
+server.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+
+
+
+
+
+
