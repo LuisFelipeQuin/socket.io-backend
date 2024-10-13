@@ -98,13 +98,12 @@ router.post('/v1/create/room', async (req, res) => {
 
     req.io.emit('roomCreated', newRoom);
 
-    res.status(200).json({ message: 'Room created successfully', room: newRoom });
+    res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
     console.error("Error creating the room:", error);
     res.status(200).json({ message: 'Error creating the room', error: error.message });
   }
 });
-
 
 
 router.post('/v1/join/room', async (req, res, next) => {
@@ -150,6 +149,7 @@ router.post('/v1/join/room', async (req, res, next) => {
     return next(error);
   }
 });
+
 
 router.get('/v1/room/single', async (req, res) => {
   const { room_id } = req.query;
@@ -307,13 +307,11 @@ router.post('/v1/create/message', async (req, res) => {
 
 router.post('/v1/edit/room', async (req, res) => {
   try {
-    const { room_id, name, language, max_users, admin_id } = req.body;
-
+    const { room_id, name, language, max_users, admin_id, level } = req.body;
 
     if (!room_id || !admin_id) {
       return res.status(200).json({ message: 'Room ID and Admin ID are required to edit the room' });
     }
-
 
     const room = await Room.findById(room_id);
 
@@ -321,20 +319,19 @@ router.post('/v1/edit/room', async (req, res) => {
       return res.status(200).json({ message: 'Room not found' });
     }
 
-
     const isAdmin = room.admin.some(admin => admin.user_id === admin_id);
 
     if (!isAdmin) {
       return res.status(200).json({ message: 'Only the room admin can update the room' });
     }
 
+
     if (name) room.name = name;
     if (language) room.language = language;
+    if (level) room.level = level;
     if (max_users !== undefined) room.max_users = max_users;
 
-
     await room.save();
-
 
     req.io.emit('roomUpdated', room);
 
@@ -344,6 +341,55 @@ router.post('/v1/edit/room', async (req, res) => {
     res.status(200).json({ message: 'Error updating the room', error: error.message });
   }
 });
+
+
+router.delete('/v1/delete/room', async (req, res) => {
+  try {
+    const { room_id, admin_id } = req.body;
+
+    // Check if room_id and admin_id are provided
+    if (!room_id || !admin_id) {
+      return res.status(400).json({ message: 'Room ID and Admin ID are required to delete a room' });
+    }
+
+    // Find the room by ID
+    const room = await Room.findById(room_id);
+
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    // Check if the provided admin_id matches the room's admin
+    if (!room.admin || room.admin[0].user_id !== admin_id) {
+      return res.status(403).json({ message: 'Only the admin can delete this room' });
+    }
+
+    // Check if there are users in the room
+    if (room.users && room.users.length > 0) {
+      return res.status(400).json({ message: 'Room cannot be deleted because there are users inside' });
+    }
+
+    // Delete the room
+    await Room.findByIdAndDelete(room_id);
+
+    // Emit a roomDeleted event
+    req.io.emit('roomDeleted', room);
+
+
+    res.status(200).json({ message: 'Room deleted successfully' });
+  } catch (error) {
+    console.error("Error deleting the room:", error);
+    res.status(500).json({ message: 'Error deleting the room', error: error.message });
+  }
+});
+
+
+//  -- i think we dont need it--
+// const emitUserLeftRoom = (io, room) => {
+//   if (io && room) {
+//     io.emit('userLeftRoom', room);
+//   }
+// };
 
 
 

@@ -9,8 +9,9 @@ const passport = require('./auth');
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
+const setupSocketHandlers = require('./socketHandlers');
 
-// Configuración de CORS
+// CORS and middlewares
 const corsOptions = {
   origin: 'http://localhost:3001',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
@@ -18,10 +19,7 @@ const corsOptions = {
   credentials: true
 };
 
-// Aplicar middleware de CORS
 app.use(cors(corsOptions));
-
-// Parsear el cuerpo de las solicitudes como JSON
 app.use(express.json());
 
 app.use(session({
@@ -31,34 +29,22 @@ app.use(session({
   cookie: { secure: 'auto' }
 }));
 
-
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Inicializar Socket.IO
 const io = new Server(server, {
   cors: corsOptions
 });
 
-// Middleware para adjuntar io a cada solicitud
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// Eventos de Socket.IO
-io.on('connection', (socket) => {
-  socket.on('joinRoom', (roomId) => {
-    socket.join(roomId);
-  });
+// Setup socket handlers
+setupSocketHandlers(io);
 
-  socket.on('messageCreated', (newMessage) => {
-    io.to(newMessage.room_id).emit('messageCreated', newMessage);
-  });
-});
-
-
-// Conectar a MongoDB
+// Connect to MongoDB
 mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -66,17 +52,10 @@ db.once('open', function () {
   console.log("we are connected to the database!");
 });
 
-// Usar las rutas definidas en el archivo de rutas
 app.use('/', routes);
 app.use('/api', routes);
 
-// Iniciar el servidor HTTP y Socket.IO
+// Start the server
 server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
-
-
-
-
-
