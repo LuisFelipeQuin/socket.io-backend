@@ -5,23 +5,29 @@ const setupSocketHandlers = (io) => {
     io.on('connection', (socket) => {
         console.log(`User connected: ${socket.id}`);
 
-
+        // When user joins a room
         socket.on('joinRoom', (roomId, user_id) => {
             socket.join(roomId);
-            console.log(`User: ${user_id},  joined room: ${roomId},  in the socket id of: ${socket.id} `);
+            socket.join(user_id); // Joining a room based on user_id for targeted communication
+            activeUsers.set(socket.id, { user_id, room_id: roomId });
+            console.log(`User: ${user_id}, joined room: ${roomId}, in the socket id of: ${socket.id}`);
         });
 
+        // Heartbeat handling to keep track of active users
         socket.on('heartbeatPing', (data) => {
-            console.log(`Heartbeat received from user == > ${data.user_id}`);
+            const currentDate = new Date();
+            const dateString = currentDate.toLocaleString();
+            console.log(`Heartbeat received from user == > ${data.user_id} at [${dateString}]`);
             const { user_id, room_id } = data;
             activeUsers.set(socket.id, { user_id, room_id, lastPing: Date.now() });
         });
 
-
+        // When a message is created in a room
         socket.on('messageCreated', (newMessage) => {
             io.to(newMessage.room_id).emit('messageCreated', newMessage);
         });
 
+        // Handling user disconnection
         socket.on('disconnect', async () => {
             console.log(`User disconnected: ${socket.id}`);
 
@@ -48,7 +54,6 @@ const setupSocketHandlers = (io) => {
                 }
             }
         });
-
 
         // Cleanup inactive users periodically
         setInterval(() => {

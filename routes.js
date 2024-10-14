@@ -216,7 +216,6 @@ router.post('/v1/admin/request/leave/room', async (req, res, next) => {
   }
 
   try {
-    // Busca la room por ID
     const room = await Room.findById(room_id);
     if (!room) {
       return res.status(200).json({ success: 1, message: 'Room not found' });
@@ -227,20 +226,11 @@ router.post('/v1/admin/request/leave/room', async (req, res, next) => {
       return res.status(200).json({ success: 1, message: 'Only the admin can remove a user from the room' });
     }
 
-    const userIndex = room.users.findIndex(user => user.user_id === user_id);
-    if (userIndex === -1) {
-      return res.status(200).json({ success: 1, message: 'User not found in the room' });
-    }
+    req.io.to(user_id).emit('kickedOut', { room_id });
 
-    room.users.splice(userIndex, 1);
-    room.lastActivity = Date.now();
-    await room.save();
-
-    req.io.emit('userRemovedFromRoom', room);
-
-    res.status(200).json({ success: 1, response: 'OK', });
+    res.status(200).json({ success: 1, response: 'OK' });
   } catch (error) {
-    console.error({ success: 1, response: error, });
+    console.error({ success: 1, response: error });
     return next(error);
   }
 });
