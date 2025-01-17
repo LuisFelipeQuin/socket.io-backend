@@ -60,7 +60,9 @@ const setupSocketHandlers = (io) => {
             const now = Date.now();
             activeUsers.forEach((value, key) => {
                 if (now - value.lastPing > 15000) { // 15 seconds timeout
-                    console.log(`Removing user ${value.user_id} from room ${value.room_id} due to inactivity.`);
+                    const currentDate = new Date();
+                    const dateString = currentDate.toLocaleString();
+                    console.log(`Removing user ${value.user_id} from room ${value.room_id} due to inactivity. at [${dateString}]`);
                     io.to(value.room_id).emit('userRemovedFromRoom', { user_id: value.user_id, room_id: value.room_id });
                     activeUsers.delete(key);
                 }

@@ -27,8 +27,13 @@ const roomSchema = new mongoose.Schema({
   deleted_date: { type: Date, default: null }
 }, { versionKey: false });
 
+// Validation to ensure only one admin per room
 function arrayLimit(val) {
   return val.length <= 1;
 }
 
+// Virtual field to keep track of delete timers for inactive rooms
+roomSchema.virtual('deleteTimer');
+
+// Export Room model
 module.exports = mongoose.model('Room', roomSchema);

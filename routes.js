@@ -21,6 +21,8 @@ router.get('/data', (req, res) => {
   res.json({ message: 'Hola.. aca deberia haber algo de data', datos: [1, 2, 3] });
 });
 
+const roomDeleteTimers = {};  // This will store the timers for each room
+
 
 // Informacion que se envia en el jsonwebtoken
 function generateToken(user) {
@@ -91,12 +93,32 @@ router.post('/v1/create/room', async (req, res) => {
       max_users,
       users: [],
       admin: [admin],
-      level: validLevel
+      level: validLevel,
+      lastActivity: Date.now()
     });
 
     await newRoom.save();
 
     req.io.emit('roomCreated', newRoom);
+
+    roomDeleteTimers[newRoom._id] = setTimeout(async () => {
+      try {
+        const currentRoom = await Room.findById(newRoom._id);
+        if (currentRoom && currentRoom.users.length === 0) {
+          await Room.findByIdAndDelete(newRoom._id);
+          req.io.emit('roomDeleted', newRoom);
+
+          const deletionTime = new Date();
+          const formattedTime = deletionTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+          const formattedDate = deletionTime.toLocaleDateString('en-US');
+
+          console.log(`Room ${newRoom._id} deleted due to inactivity after creation at ${formattedDate} ${formattedTime}.`);
+          delete roomDeleteTimers[newRoom._id];
+        }
+      } catch (error) {
+        console.error(`Error deleting room ${newRoom._id} due to inactivity:`, error);
+      }
+    }, 300000);
 
     res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
@@ -119,10 +141,6 @@ router.post('/v1/join/room', async (req, res, next) => {
       return res.status(200).json(debugging ? { success: 1, message: 'Room not found' } : { success: 1, response: "NO" });
     }
 
-    if (!room.users) {
-      room.users = [];
-    }
-
     const userExists = room.users.some(user => user.user_id === user_id);
     if (userExists) {
       return res.status(200).json({ success: 1, response: 'User already in the room' });
@@ -130,15 +148,21 @@ router.post('/v1/join/room', async (req, res, next) => {
 
     const userInAnotherRoom = await Room.findOne({ 'users.user_id': user_id });
     if (userInAnotherRoom) {
-      return res.status(200).json({ success: 1, response: 'User in another room' });
+      return res.status(200).json({ success: 1, response: 'leave room' }); // leave to join the new room
     }
 
     if (room.users.length >= room.max_users) {
       return res.status(200).json({ success: 1, response: 'Room is full' });
     }
 
+    // Clear any existing delete timer if a user joins the room
+    if (roomDeleteTimers[room_id]) {
+      clearTimeout(roomDeleteTimers[room_id]);
+      delete roomDeleteTimers[room_id];
+    }
+
     room.users.push({ user_id, name, image });
-    room.lastActivity = Date.now();
+    room.lastActivity = Date.now();  // Update last activity time
     await room.save();
 
     req.io.emit('userEnteredRoom', room);
@@ -174,10 +198,10 @@ router.get('/v1/room/single', async (req, res) => {
 
 
 router.post('/v1/leave/room', async (req, res, next) => {
-  const { room_id, user_id, name, image, debugging } = req.body;
+  const { room_id, user_id, debugging } = req.body;
 
-  if (!room_id || !user_id || !name || !image) {
-    return res.status(200).json(debugging ? { success: 1, message: 'Room ID, User ID, Name, and Image are required' } : { success: 1, response: "NO" });
+  if (!room_id || !user_id) {
+    return res.status(200).json(debugging ? { success: 1, message: 'Room ID and User ID are required' } : { success: 1, response: "NO" });
   }
 
   try {
@@ -186,19 +210,36 @@ router.post('/v1/leave/room', async (req, res, next) => {
       return res.status(200).json(debugging ? { success: 1, message: 'Room not found' } : { success: 1, response: "NO" });
     }
 
-    if (!room.users) {
-      room.users = [];
-    }
-
+    // Check if user is in the room
     const userIndex = room.users.findIndex(user => user.user_id === user_id);
     if (userIndex === -1) {
       return res.status(200).json({ success: 1, message: 'User not found in the room' });
     }
 
+    // Remove user from the room
     room.users.splice(userIndex, 1);
+    room.lastActivity = Date.now();
     await room.save();
 
     req.io.emit('userLeftRoom', room);
+
+    if (room.users.length === 0) {
+      roomDeleteTimers[room_id] = setTimeout(async () => {
+        try {
+          await Room.findByIdAndDelete(room_id);
+
+          const deletionTime = new Date();
+          const formattedTime = deletionTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+          const formattedDate = deletionTime.toLocaleDateString('en-US');
+
+          req.io.emit('roomDeleted', room);
+          console.log(`Room ${room_id} deleted due to inactivity (after user left room). at ${formattedDate} ${formattedTime}.`);
+          delete roomDeleteTimers[room_id];
+        } catch (error) {
+          console.error(`Error deleting room ${room_id}:`, error);
+        }
+      }, 300000);
+    }
 
     res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
@@ -356,7 +397,7 @@ router.delete('/v1/delete/room', async (req, res) => {
 
     // Check if there are users in the room
     if (room.users && room.users.length > 0) {
-      return res.status(400).json({ message: 'Room cannot be deleted because there are users inside' });
+      return res.status(200).json({ success: 1, response: "users in the room" });
     }
 
     // Delete the room
@@ -366,21 +407,12 @@ router.delete('/v1/delete/room', async (req, res) => {
     req.io.emit('roomDeleted', room);
 
 
-    res.status(200).json({ message: 'Room deleted successfully' });
+    res.status(200).json({ success: 1, response: "OK" });
   } catch (error) {
     console.error("Error deleting the room:", error);
     res.status(500).json({ message: 'Error deleting the room', error: error.message });
   }
 });
-
-
-//  -- i think we dont need it--
-// const emitUserLeftRoom = (io, room) => {
-//   if (io && room) {
-//     io.emit('userLeftRoom', room);
-//   }
-// };
-
 
 
 module.exports = router;
