@@ -3,11 +3,11 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('./users');
 
 passport.use(new GoogleStrategy({
-    clientID: "233272746185-7gighf3v9t2010j378792eueht7otu81.apps.googleusercontent.com",
-    clientSecret: "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",
-    callbackURL: "http://localhost:3000/auth/google/callback"
-  },
-  async function(accessToken, refreshToken, profile, cb) {
+  clientID: "233272746185-7gighf3v9t2010j378792eueht7otu81.apps.googleusercontent.com",
+  clientSecret: "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",
+  callbackURL: "http://3.137.159.105:3000/auth/google/callback"
+},
+  async function (accessToken, refreshToken, profile, cb) {
     try {
       let user = await User.findOne({ googleId: profile.id });
 
@@ -28,11 +28,11 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
   done(null, user);
 });
 
-passport.deserializeUser(function(obj, done) {
+passport.deserializeUser(function (obj, done) {
   done(null, obj);
 });
 
