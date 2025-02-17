@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = 3001;
 const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes');
@@ -10,10 +10,12 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const setupSocketHandlers = require('./socketHandlers');
+const setupWebRTCSignaling = require('./webrtcHandlers');
 
 // CORS and middlewares
 const corsOptions = {
-  origin: 'http://localhost:3001',
+  // origin: 'http://localhost:3001',
+  origin: ['http://localhost:3000', 'http://ec2-3-137-159-105.us-east-2.compute.amazonaws.com:3000/', "http://3.137.159.105:3000"],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
   credentials: true
@@ -43,6 +45,7 @@ app.use((req, res, next) => {
 
 // Setup socket handlers
 setupSocketHandlers(io);
+setupWebRTCSignaling(io);
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnifiedTopology: true });
