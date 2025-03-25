@@ -19,7 +19,7 @@ const corsOptions = {
     'http://localhost:3000',
     'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/',
     'http://3.137.181.105:3000/',
-    'http://ec2-18-188-236-31.us-east-2.compute.amazonaws.com:3000/' // Add the actual domain here
+    'http://ec2-18-188-236-31.us-east-2.compute.amazonaws.com:3001/' // Add the actual domain here
   ],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
