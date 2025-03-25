@@ -14,8 +14,8 @@ const setupWebRTCSignaling = require('./webrtcHandlers');
 
 // CORS and middlewares
 const corsOptions = {
-  // origin: 'http://localhost:3001',
-  origin: ['http://localhost:3000', 'http://ec2-3-137-159-105.us-east-2.compute.amazonaws.com:3000/', "http://3.137.159.105:3000"],
+  origin: ['http://localhost:3000', 'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/', "http://3.137.181.105:3000/"],
+  // http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
   credentials: true
