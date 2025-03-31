@@ -45,10 +45,11 @@ router.get('/auth/google/callback',
     const token = generateToken(req.user);
 
     res.cookie('token', token, {
-      httpOnly: false,
-      secure: false,
-      sameSite: 'lax'
+      httpOnly: false,      // Or true, if you're not reading it from JS
+      secure: true,         // Required for SameSite=None
+      sameSite: 'None'      // 👈 This allows cross-site sending
     });
+
 
     res.redirect('https://talktalkrommie.online');
   }
