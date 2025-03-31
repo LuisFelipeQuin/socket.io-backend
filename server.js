@@ -1,45 +1,30 @@
 const express = require('express');
 const app = express();
-const port = 3001;
 const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes');
 const session = require('express-session');
 const passport = require('./auth');
-const http = require('http');
-const server = http.createServer(app);
+const fs = require('fs');
+const https = require('https');
 const { Server } = require("socket.io");
 const setupSocketHandlers = require('./socketHandlers');
 const setupWebRTCSignaling = require('./webrtcHandlers');
 
-
-const fs = require('fs');
-const https = require('https');
-const express = require('express');
-
-// const app = express();
-
+// SSL
 const options = {
   key: fs.readFileSync('/etc/letsencrypt/live/talktalkrommie-api.online/privkey.pem'),
   cert: fs.readFileSync('/etc/letsencrypt/live/talktalkrommie-api.online/fullchain.pem'),
 };
 
-// Your API routes
-app.get('/testing', (req, res) => {
-  res.json({ message: 'Backend is secure and live 🔐' });
-});
-
-// Start HTTPS server
-https.createServer(options, app).listen(443, () => {
-  console.log('✅ Backend running on https://talktalkrommie-api.online');
-});
-
-
-
-// CORS and middlewares
+// CORS
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/', "http://3.137.181.105:3000/", 'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000',],
-  // origin: "*",
+  origin: [
+    'http://localhost:3000',
+    'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000',
+    'http://3.137.181.105:3000',
+    "https://talktalkrommie.online"
+  ],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: 'Content-Type,Authorization',
   credentials: true
@@ -48,6 +33,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Sessions and Passport
 app.use(session({
   secret: 'secret',
   resave: false,
@@ -58,7 +44,31 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-const io = new Server(server, {
+// MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/test')
+  .then(() => console.log("✅ Connected to MongoDB!"))
+  .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function () {
+  console.log("✅ We are connected to the database!");
+});
+
+// Routes
+app.use('/', routes);
+app.use('/api', routes);
+
+// Test Route
+app.get('/testing', (req, res) => {
+  res.json({ message: 'Backend is secure and live 🔐' });
+});
+
+// 🔥 Create HTTPS server with Express
+const httpsServer = https.createServer(options, app);
+
+// 🔌 Setup Socket.IO on the HTTPS server
+const io = new Server(httpsServer, {
   cors: corsOptions
 });
 
@@ -71,22 +81,7 @@ app.use((req, res, next) => {
 setupSocketHandlers(io);
 setupWebRTCSignaling(io);
 
-// Connect to MongoDB
-// mongoose.connect('mongodb://localhost/test', { useNewUrlParser: true, useUnifiedTopology: true });
-mongoose.connect('mongodb://127.0.0.1:27017/test')
-  .then(() => console.log("✅ Connected to MongoDB!"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err));
-
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function () {
-  console.log("we are connected to the database!");
-});
-
-app.use('/', routes);
-app.use('/api', routes);
-
-// Start the server
-server.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+// Start HTTPS server
+httpsServer.listen(443, () => {
+  console.log('✅ HTTPS Backend running at https://talktalkrommie-api.online');
 });
