@@ -38,8 +38,12 @@ app.use(session({
   secret: 'secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: 'auto' }
+  cookie: {
+    secure: true,
+    sameSite: 'None'
+  }
 }));
+
 
 app.use(passport.initialize());
 app.use(passport.session());
