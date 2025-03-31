@@ -56,6 +56,17 @@ router.get('/auth/google/callback',
   }
 );
 
+router.get('/test-cookie', (req, res) => {
+  res.cookie('test', '123', {
+    httpOnly: false,
+    secure: true,
+    sameSite: 'None',
+    domain: '.talktalkrommie.online'
+  });
+  res.send('Test cookie set!');
+});
+
+
 
 
 router.get('/v1/get/rooms', async (req, res) => {
