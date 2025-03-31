@@ -6,7 +6,7 @@ passport.use(new GoogleStrategy({
   clientID: "233272746185-id63st08kg73b59lj04nvc1p81io32ct.apps.googleusercontent.com",
   clientSecret: "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",
   // callbackURL: "http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/auth/google/callback"
-  callbackURL: "http://ec2-18-188-236-31.us-east-2.compute.amazonaws.com:3001/auth/google/callback"
+  callbackURL: "https://talktalkrommie-api.online/auth/google/callback"
 
 },
   async function (accessToken, refreshToken, profile, cb) {

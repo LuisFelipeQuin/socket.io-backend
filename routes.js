@@ -50,7 +50,7 @@ router.get('/auth/google/callback',
       sameSite: 'lax'
     });
 
-    res.redirect('http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000');
+    res.redirect('https://talktalkrommie.online');
   }
 );
 
