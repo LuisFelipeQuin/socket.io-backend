@@ -44,15 +44,7 @@ router.get('/auth/google/callback',
   (req, res) => {
     const token = generateToken(req.user);
 
-    // res.cookie('token', token, {
-    //   httpOnly: false,
-    //   secure: true,
-    //   sameSite: 'None',
-    //   domain: '.talktalkrommie.online' // 👈 this is key
-    // });
-
-
-    res.redirect(`https://talktalkrommie.online/auth-success?token=${token}`);
+    res.redirect(`https://talktalkrommie.online?token=${token}`);
 
   }
 );
