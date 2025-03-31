@@ -12,6 +12,30 @@ const { Server } = require("socket.io");
 const setupSocketHandlers = require('./socketHandlers');
 const setupWebRTCSignaling = require('./webrtcHandlers');
 
+
+const fs = require('fs');
+const https = require('https');
+const express = require('express');
+
+// const app = express();
+
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/talktalkrommie-api.online/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/talktalkrommie-api.online/fullchain.pem'),
+};
+
+// Your API routes
+app.get('/testing', (req, res) => {
+  res.json({ message: 'Backend is secure and live 🔐' });
+});
+
+// Start HTTPS server
+https.createServer(options, app).listen(443, () => {
+  console.log('✅ Backend running on https://talktalkrommie-api.online');
+});
+
+
+
 // CORS and middlewares
 const corsOptions = {
   origin: ['http://localhost:3000', 'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000/', "http://3.137.181.105:3000/", 'http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000',],

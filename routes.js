@@ -45,12 +45,10 @@ router.get('/auth/google/callback',
     const token = generateToken(req.user);
 
     res.cookie('token', token, {
-      domain: '.us-east-2.compute.amazonaws.com',
       httpOnly: false,
       secure: false,
       sameSite: 'lax'
     });
-
 
     res.redirect('http://ec2-3-137-181-105.us-east-2.compute.amazonaws.com:3000');
   }
