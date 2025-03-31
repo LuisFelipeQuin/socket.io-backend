@@ -59,9 +59,7 @@ db.once('open', function () {
   console.log("✅ We are connected to the database!");
 });
 
-// Routes
-app.use('/', routes);
-app.use('/api', routes);
+
 
 // Test Route
 app.get('/testing', (req, res) => {
@@ -80,6 +78,11 @@ app.use((req, res, next) => {
   req.io = io;
   next();
 });
+
+// Routes
+app.use('/', routes);
+app.use('/api', routes);
+
 
 // Setup socket handlers
 setupSocketHandlers(io);
