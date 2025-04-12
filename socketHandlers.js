@@ -27,6 +27,20 @@ const setupSocketHandlers = (io) => {
             io.to(newMessage.room_id).emit('messageCreated', newMessage);
         });
 
+        socket.on('getUsersInRoom', (roomId, callback) => {
+            const peersInRoom = [];
+
+            for (const [socketId, userData] of activeUsers.entries()) {
+                if (userData.room_id === roomId && socketId !== socket.id) {
+                    peersInRoom.push(socketId); // collect all peer socket IDs
+                }
+            }
+
+            console.log(`Sending current users in room ${roomId} to ${socket.id}:`, peersInRoom);
+            callback(peersInRoom); // return via callback
+        });
+
+
         // Handling user disconnection
         socket.on('disconnect', async () => {
             console.log(`User disconnected: ${socket.id}`);
