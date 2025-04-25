@@ -6,7 +6,7 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
-
+const cors = require('cors');
 
 const path = require('path');
 const app = express();
@@ -45,11 +45,6 @@ router.get('/auth/google/callback',
     const token = generateToken(req.user);
 
     const isProd = process.env.NODE_ENV === 'production';
-
-    app.use(cors({
-      origin: 'https://talktalkrommie.online',   // front-end origin
-      credentials: true                          // allow cookies
-    }));
 
     // in the callback
     res.cookie('user_shitti_token', token, {
