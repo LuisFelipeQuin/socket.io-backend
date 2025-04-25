@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/data', (req, res) => {
-  res.json({ message: 'hey.. we should have some data over here', data: [1, 2, 3] });
+  res.json({ message: 'hey.. we should have some data over here_luis update?', data: [1, 2, 3] });
 });
 
 const roomDeleteTimers = {};  // This will store the timers for each room
