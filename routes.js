@@ -44,6 +44,13 @@ router.get('/auth/google/callback',
   (req, res) => {
     const token = generateToken(req.user);
 
+    res.cookie('user_shitti_token', token, {
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax'
+    });
+
+
     res.redirect(`https://talktalkrommie.online?token=${token}`);
 
   }

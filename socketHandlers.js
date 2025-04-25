@@ -41,6 +41,7 @@ const setupSocketHandlers = (io) => {
         });
 
 
+
         // Handling user disconnection
         socket.on('disconnect', async () => {
             console.log(`User disconnected: ${socket.id}`);
