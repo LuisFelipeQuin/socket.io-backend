@@ -44,14 +44,22 @@ router.get('/auth/google/callback',
   (req, res) => {
     const token = generateToken(req.user);
 
+    const isProd = process.env.NODE_ENV === 'production';
+
+    app.use(cors({
+      origin: 'https://talktalkrommie.online',   // front-end origin
+      credentials: true                          // allow cookies
+    }));
+
+    // in the callback
     res.cookie('user_shitti_token', token, {
-      httpOnly: false,
-      secure: false,
-      sameSite: 'lax'
+      httpOnly: false,                 // or true if you DON’T want JS to read it
+      secure: isProd,                 // must be true in production (HTTPS)
+      sameSite: 'None',                // allow cross-site
+      domain: '.talktalkrommie.online',// leading dot shares the cookie with all
+      path: '/'                        // (optional) send on every request
     });
-
-
-    res.redirect(`https://talktalkrommie.online?token=${token}`);
+    res.redirect('https://talktalkrommie.online');
 
   }
 );
