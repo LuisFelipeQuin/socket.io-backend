@@ -54,7 +54,8 @@ router.get('/auth/google/callback',
       domain: '.talktalkrommie.online',// leading dot shares the cookie with all
       path: '/'                        // (optional) send on every request
     });
-    res.redirect('https://talktalkrommie.online');
+    // res.redirect('https://talktalkrommie.online');
+    res.redirect(`https://talktalkrommie.online?token=${token}`);
 
   }
 );
