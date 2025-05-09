@@ -63,7 +63,7 @@ db.once('open', function () {
 
 // Test Route
 app.get('/testing', (req, res) => {
-  res.json({ message: 'Backend is secure and live 🔐' });
+  res.json({ message: 'Backend is a nigger' });
 });
 
 // 🔥 Create HTTPS server with Express
