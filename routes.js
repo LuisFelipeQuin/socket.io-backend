@@ -66,8 +66,9 @@ router.get('/auth/google/callback',
 
     let redirectUrl = `https://talktalkrommie.online?token=${token}`
 
-    if (req.query.redirect_path) {
-      redirectUrl = `https://talktalkrommie.online${req.query.redirect_path}?token=${token}`;
+    if (req.session.redirect_path) {
+      redirectUrl = `https://talktalkrommie.online${req.session.redirect_path}?token=${token}`;
+      delete req.session.redirect_path;
     }
 
     res.redirect(redirectUrl);
