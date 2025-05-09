@@ -36,42 +36,35 @@ function generateToken(user) {
 }
 
 
-router.get('/auth/google',
-  function (req, res, next) {
-    if (req.query.redirect_path) {
-      req.session.redirect_path = req.query.redirect_path;
-    }
-    next();
-  },
+router.get('/auth/google', (req, res, next) => {
+  const redirectPath = req.query.redirect_path || '/';
   passport.authenticate('google', {
-    scope: ['profile', 'email']
-  })
-);
+    scope: ['profile', 'email'],
+    state: redirectPath          // travels through Google for us
+  })(req, res, next);
+});
 
 
-router.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
+
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/login',
+    keepSessionInfo: true        // keeps the Passport login for this request
+  }),
   (req, res) => {
     const token = generateToken(req.user);
-
-    const isProd = process.env.NODE_ENV === 'production';
+    const redirectPath = req.query.state || '/';
 
     res.cookie('user_token', token, {
       httpOnly: false,
-      secure: isProd,
+      secure: true,
       sameSite: 'None',
       domain: '.talktalkrommie.online',
       path: '/'
     });
 
-    let redirectUrl = `https://talktalkrommie.online?token=${token}`
-
-    if (req.session.redirect_path) {
-      redirectUrl = `https://talktalkrommie.online${req.session.redirect_path}?token=${token}`;
-      delete req.session.redirect_path;
-    }
-
-    res.redirect(redirectUrl);
+    res.redirect(`https://talktalkrommie.online${redirectPath}?token=${token}`);
   }
 );
 
