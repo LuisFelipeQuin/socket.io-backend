@@ -46,17 +46,21 @@ router.get('/auth/google/callback',
 
     const isProd = process.env.NODE_ENV === 'production';
 
-    // in the callback
-    res.cookie('user_shitti_token', token, {
-      httpOnly: false,                 // or true if you DON’T want JS to read it
-      secure: isProd,                 // must be true in production (HTTPS)
-      sameSite: 'None',                // allow cross-site
-      domain: '.talktalkrommie.online',// leading dot shares the cookie with all
-      path: '/'                        // (optional) send on every request
+    res.cookie('user_token', token, {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: 'None',
+      domain: '.talktalkrommie.online',
+      path: '/'
     });
-    // res.redirect('https://talktalkrommie.online');
+
     res.redirect(`https://talktalkrommie.online?token=${token}`);
 
+    if (req.query.redirect_path) {
+      redirectUrl = `https://talktalkrommie.online${req.query.redirect_path}?token=${token}`;
+    }
+
+    res.redirect(redirectUrl);
   }
 );
 
@@ -69,8 +73,6 @@ router.get('/test-cookie', (req, res) => {
   });
   res.send('Test cookie set!');
 });
-
-
 
 
 router.get('/v1/get/rooms', async (req, res) => {
