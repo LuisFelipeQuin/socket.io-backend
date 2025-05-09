@@ -54,7 +54,7 @@ router.get('/auth/google/callback',
       path: '/'
     });
 
-    res.redirect(`https://talktalkrommie.online?token=${token}`);
+    let redirectUrl = `https://talktalkrommie.online?token=${token}`
 
     if (req.query.redirect_path) {
       redirectUrl = `https://talktalkrommie.online${req.query.redirect_path}?token=${token}`;
