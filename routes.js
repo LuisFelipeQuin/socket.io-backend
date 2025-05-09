@@ -36,7 +36,17 @@ function generateToken(user) {
 }
 
 
-router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/auth/google',
+  function (req, res, next) {
+    if (req.query.redirect_path) {
+      req.session.redirect_path = req.query.redirect_path;
+    }
+    next();
+  },
+  passport.authenticate('google', {
+    scope: ['profile', 'email']
+  })
+);
 
 
 router.get('/auth/google/callback',
