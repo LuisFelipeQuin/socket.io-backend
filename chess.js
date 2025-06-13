@@ -8,11 +8,13 @@ io.on('connection', socket => {
 
     // A invites B
     socket.on('chessInvite', ({ roomId, fromUserId, toUserId }) => {
+        console.log('chess invite triggered')
         io.to(toUserId).emit('chessInviteReceived', { roomId, fromUserId });
     });
 
     // B answers (accept/decline)
     socket.on('chessInviteResponse', ({ roomId, fromUserId, toUserId, accept }) => {
+        console.log('Chess Invite Response triggered')
         if (!accept) {
             io.to(fromUserId).emit('chessInviteDeclined', { toUserId });
             return;
