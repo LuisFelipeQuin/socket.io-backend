@@ -14,7 +14,7 @@ const app = express();
 app.use(cookieParser());
 
 router.get('/', (req, res) => {
-  res.json({ message: 'PLEasdfgndsnfks' });
+  res.json({ message: 'chess game updated' });
 });
 
 router.get('/data', (req, res) => {
