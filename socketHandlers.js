@@ -5,6 +5,8 @@ const setupSocketHandlers = (io) => {
     io.on('connection', (socket) => {
         console.log(`User connected: ${socket.id}`);
 
+        socket.on('registerUser', ({ userId }) => socket.join(userId));
+
         // When user joins a room
         socket.on('joinRoom', (roomId, user_id) => {
             socket.join(roomId);
