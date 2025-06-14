@@ -35,7 +35,7 @@ const setupChessHandlers = (io) => {
             });
         });
 
-        /* ---- B. MOVES ---- */
+        /* ---- B. MOVES---- */
         socket.on('chessMove', ({ matchId, from, to, promotion = 'q', playerId }) => {
             const match = activeMatches.get(matchId);
             if (!match) return;
