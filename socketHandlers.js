@@ -4,6 +4,7 @@ const activeUsers = new Map();
 const setupSocketHandlers = (io) => {
     io.on('connection', (socket) => {
         console.log(`User connected: ${socket.id}`);
+        // attachChessHandlers(io, socket);
 
         socket.on('registerUser', ({ userId }) => socket.join(userId));
 

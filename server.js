@@ -10,6 +10,7 @@ const https = require('https');
 const { Server } = require("socket.io");
 const setupSocketHandlers = require('./socketHandlers');
 const setupWebRTCSignaling = require('./webrtcHandlers');
+const setupChessHandlers = require('./chess');
 
 // SSL
 const options = {
@@ -87,6 +88,7 @@ app.use('/api', routes);
 // Setup socket handlers
 setupSocketHandlers(io);
 setupWebRTCSignaling(io);
+setupChessHandlers(io);
 
 // Start HTTPS server
 httpsServer.listen(443, () => {
