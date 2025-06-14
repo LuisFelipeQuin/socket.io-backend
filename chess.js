@@ -35,7 +35,7 @@ const setupChessHandlers = (io) => {
             });
         });
 
-        /* ---- B. MOVES---- */
+        /* ---- B. MOVES ---- */
         socket.on('chessMove', ({ matchId, from, to, promotion = 'q', playerId }) => {
             const match = activeMatches.get(matchId);
             if (!match) return;
@@ -65,13 +65,23 @@ const setupChessHandlers = (io) => {
                 move,
                 fen: match.chess.fen(),
                 history: match.chess.history({ verbose: true }),
+                // inCheck: match.chess.inCheck?.() || match.chess.in_check?.(),
+                // inCheckmate:
+                //     match.chess.isCheckmate?.() || match.chess.in_checkmate?.(),
+                // inDraw: match.chess.isDraw?.() || match.chess.in_draw?.(),
                 inCheck: match.chess.inCheck?.() || match.chess.in_check?.(),
-                inCheckmate:
-                    match.chess.isCheckmate?.() || match.chess.in_checkmate?.(),
-                inDraw: match.chess.isDraw?.() || match.chess.in_draw?.(),
+                inCheckmate: match.chess.inCheckmate?.() || match.chess.in_checkmate?.(),
+                inDraw: match.chess.inDraw?.() || match.chess.in_draw?.(),
             });
 
-            if (match.chess.game_over()) activeMatches.delete(matchId);
+            // if (match.chess.game_over()) activeMatches.delete(matchId);
+
+            if (
+                (typeof match.chess.game_over === 'function' && match.chess.game_over()) ||
+                (typeof match.chess.gameOver === 'function' && match.chess.gameOver())
+            ) {
+                activeMatches.delete(matchId);
+            }
         });
 
         /* ---- C. RESIGN ---- */
