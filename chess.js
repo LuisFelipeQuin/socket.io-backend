@@ -49,7 +49,12 @@ const setupChessHandlers = (io) => {
 
             const move = match.chess.move({ from, to, promotion, sloppy: true });
             if (!move) {
-                socket.emit('chessIllegalMove', { reason: 'Illegal move' });
+                // socket.emit('chessIllegalMove', { reason: 'Illegal move' });
+                socket.emit('chessIllegalMove', {
+                    reason: 'Illegal move',
+                    fen: match.chess.fen(),           // authoritative position
+                });
+
                 return;
             }
 
