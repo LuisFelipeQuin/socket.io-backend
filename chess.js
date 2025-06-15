@@ -64,17 +64,13 @@ const setupChessHandlers = (io) => {
                 matchId,
                 move,
                 fen: match.chess.fen(),
-                history: match.chess.history({ verbose: true }),
-                // inCheck: match.chess.inCheck?.() || match.chess.in_check?.(),
-                // inCheckmate:
-                //     match.chess.isCheckmate?.() || match.chess.in_checkmate?.(),
-                // inDraw: match.chess.isDraw?.() || match.chess.in_draw?.(),
+                // history: match.chess.history({ verbose: true }),
+                history: simpleHistory,
                 inCheck: match.chess.inCheck?.() || match.chess.in_check?.(),
                 inCheckmate: match.chess.inCheckmate?.() || match.chess.in_checkmate?.(),
                 inDraw: match.chess.inDraw?.() || match.chess.in_draw?.(),
             });
 
-            // if (match.chess.game_over()) activeMatches.delete(matchId);
 
             if (
                 (typeof match.chess.game_over === 'function' && match.chess.game_over()) ||
